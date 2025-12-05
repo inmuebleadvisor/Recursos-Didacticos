@@ -1,10 +1,15 @@
 // services/geminiService.ts
 // ÚLTIMA MODIFICACION: 04/12/2025
-// Este archivo conecta con tu server.js. Mantiene los fallbacks originales.
+// DESCRIPCIÓN: Se ajusta la URL del API para ser una ruta relativa.
+// Esto permite que el frontend se comunique con la función serverless '/api' de Vercel.
 
 import { FormData } from "../types";
 
-const API_URL = "http://localhost:3001/api";
+// MODIFICACIÓN PARA VERCEL: Se elimina la URL completa de localhost.
+// En Vercel, la URL base del API es el mismo dominio + /api.
+// Si deseas seguir usando 'npm run dev' con el servidor Express local, esta configuración fallará.
+// Se recomienda usar el comando 'vercel dev' para simular el entorno de producción localmente.
+const API_URL = "/api"; 
 
 export const validateText = async (text: string, context: string): Promise<string | null> => {
     try {
@@ -20,14 +25,14 @@ export const validateText = async (text: string, context: string): Promise<strin
         return data.result;
     } catch (e) {
         console.error("Validation error (client fallback):", e);
-        return null; // Comportamiento original: si falla, asume que está bien.
+        return null; 
     }
 }
 
 export const generateMetadata = async (data: FormData): Promise<{ keywords: string[], header: string }> => {
   // Intentamos conectar con el servidor seguro
   try {
-    const response = await fetch(`${API_URL}/metadata`, {
+    const response = await fetch(`${API_URL}/metadata`, { // Se usa la nueva ruta base '/api'
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data }),
