@@ -1,86 +1,53 @@
-import { GoogleGenAI, Type } from "@google/genai";
+// services/geminiService.ts
+// ÚLTIMA MODIFICACION: 04/12/2025
+// Este archivo conecta con tu server.js. Mantiene los fallbacks originales.
+
 import { FormData } from "../types";
 
-// Helper to determine if text has likely spelling errors or valid structure
-// Uses Gemini to be a "smart" validator.
+const API_URL = "http://localhost:3001/api";
+
 export const validateText = async (text: string, context: string): Promise<string | null> => {
-    if (!process.env.API_KEY) return null; // Skip if no key
-    
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: `Analyze the following text from a teacher's form input (Context: ${context}). 
-            If it has significant spelling errors or looks like gibberish, return a short, polite warning message in Spanish starting with "¡Ojo!". 
-            If it uses ONLY capital letters, return "No uses solo mayúsculas".
-            If it looks fine, return "OK".
-            
-            Text: "${text}"`,
+        const response = await fetch(`${API_URL}/validate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, context }),
         });
-        
-        const result = response.text?.trim();
-        return result === "OK" ? null : result;
+
+        if (!response.ok) throw new Error("Server error");
+
+        const data = await response.json();
+        return data.result;
     } catch (e) {
-        console.error("Validation error", e);
-        return null;
+        console.error("Validation error (client fallback):", e);
+        return null; // Comportamiento original: si falla, asume que está bien.
     }
 }
 
 export const generateMetadata = async (data: FormData): Promise<{ keywords: string[], header: string }> => {
-  if (!process.env.API_KEY) {
-    // Fallback if no API key
-    return {
-        keywords: [data.asignatura, data.semestre, "Bachillerato"],
-        header: `Recurso sobre ${data.tema}`
-    };
-  }
-
+  // Intentamos conectar con el servidor seguro
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    
-    const prompt = `
-      Act as an educational data specialist for a High School (Bachillerato) system in Sinaloa, Mexico.
-      Based on the following resource information, generate:
-      1. Three specific single-word keywords (Palabras clave) related to the content.
-      2. A short, professional header phrase (Encabezado) (max 5 words) describing the resource topic.
-
-      Resource Info:
-      Title: ${data.titulo}
-      Description: ${data.descripcion}
-      Subject: ${data.asignatura}
-      Theme: ${data.tema}
-    `;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            keywords: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-              description: "Three single keywords",
-            },
-            header: {
-              type: Type.STRING,
-              description: "A short header phrase",
-            },
-          },
-        },
-      },
+    const response = await fetch(`${API_URL}/metadata`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data }),
     });
 
-    const result = JSON.parse(response.text || "{}");
+    if (!response.ok) throw new Error("Server error");
+
+    const result = await response.json();
+    
+    // Devolvemos lo que mandó el servidor, o defaults seguros si viene vacío
     return {
         keywords: result.keywords || ["Educación", "COBAES", "Recurso"],
         header: result.header || "Recurso Didáctico Digital"
     };
 
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("Gemini Error (usando fallback local):", error);
+    
+    // 🛡️ RED DE SEGURIDAD ORIGINAL CONSERVADA
+    // Si el servidor falla, usamos tu lógica original de fallback:
     return {
         keywords: [data.asignatura, "Didáctica", "Digital"],
         header: `Recurso: ${data.titulo}`

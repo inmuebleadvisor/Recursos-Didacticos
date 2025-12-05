@@ -9,15 +9,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "lucide-react": "^0.555.0",
-    "react-dom": "^19.2.1",
-    "react": "^19.2.1",
-    "framer-motion": "^12.23.25",
-    "xlsx": "^0.18.5",
     "@google/genai": "^1.31.0",
+    "confetti-js": "^0.0.18",
+    "cors": "^2.8.5",
     "docx": "^9.5.1",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
     "file-saver": "^2.0.5",
-    "confetti-js": "^0.0.18"
+    "framer-motion": "^12.23.25",
+    "lucide-react": "^0.555.0",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

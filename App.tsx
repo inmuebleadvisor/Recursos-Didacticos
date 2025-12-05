@@ -1,46 +1,58 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, ArrowRight, ArrowLeft, Download, Sparkles } from 'lucide-react';
+import { CheckCircle, ArrowRight, ArrowLeft, Download, Sparkles, CloudUpload } from 'lucide-react'; // Agregué CloudUpload
 import { INITIAL_DATA, FormData, Zone, CollabCount, Semestre } from './types';
 import { ZONES, SUBJECTS, ROLES, RESOURCE_TYPES, CATEGORIES } from './constants';
 import { ValidatedInput, SelectInput } from './components/InputFields';
 import { Confetti } from './components/Confetti';
 import { handleExports } from './services/exportService';
 
-const LOGO_URL = "https://picsum.photos/300/120"; // Placeholder, not used in Word anymore
+// ÚLTIMA MODIFICACION: 04/12/2025
+// DESCRIPCIÓN: Componente principal de la aplicación. Gestiona el estado del formulario paso a paso.
+
+const LOGO_URL = "https://picsum.photos/300/120"; // Placeholder, ya no es crítico para el Word
 
 export default function App() {
-  const [step, setStep] = useState(0);
-  const [data, setData] = useState<FormData>(INITIAL_DATA);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
+  // --- ESTADOS (La memoria del componente) ---
+  const [step, setStep] = useState(0); // Controla en qué paso del formulario estamos (0 a 5)
+  const [data, setData] = useState<FormData>(INITIAL_DATA); // Almacena toda la información del usuario
+  const [showConfetti, setShowConfetti] = useState(false); // Efecto de celebración
+  const [isExporting, setIsExporting] = useState(false); // Estado de carga (loading) al enviar datos
 
-  // Trigger celebration on step change if forward
+  // --- FUNCIONES DE NAVEGACIÓN ---
+  
+  // Avanzar al siguiente paso
   const nextStep = () => {
     setShowConfetti(true);
-    setTimeout(() => setShowConfetti(false), 2500);
+    setTimeout(() => setShowConfetti(false), 2500); // El confeti dura 2.5 segundos
     setStep((prev) => prev + 1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // Volver arriba suavemente
   };
 
+  // Regresar al paso anterior
   const prevStep = () => {
     setStep((prev) => prev - 1);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // --- MANEJO DE DATOS ---
+
+  // Función genérica para actualizar cualquier campo de texto
   const updateField = (field: keyof FormData, value: any) => {
     setData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Función específica para manejar la selección múltiple de planteles
   const togglePlantel = (plantelName: string) => {
     setData(prev => {
         const exists = prev.planteles.includes(plantelName);
-        if (exists) return { ...prev, planteles: prev.planteles.filter(p => p !== plantelName) };
-        return { ...prev, planteles: [...prev.planteles, plantelName] };
+        if (exists) return { ...prev, planteles: prev.planteles.filter(p => p !== plantelName) }; // Si existe, lo quitamos
+        return { ...prev, planteles: [...prev.planteles, plantelName] }; // Si no, lo agregamos
     });
   };
 
-  // Validation Check before proceeding
+  // --- VALIDACIONES ---
+  // Verifica si el usuario puede avanzar basándose en reglas por paso
   const canProceed = () => {
     switch(step) {
         case 0: return data.zona !== "" && data.planteles.length > 0;
@@ -54,17 +66,21 @@ export default function App() {
     }
   };
 
+  // --- MANEJO DEL ENVÍO FINAL ---
   const handleDownload = async () => {
-    setIsExporting(true);
+    setIsExporting(true); // Activamos modo "cargando"
+    // Llamamos al servicio que conecta con Google Sheets y crea el Word
     await handleExports(data, LOGO_URL);
-    setIsExporting(false);
+    setIsExporting(false); // Desactivamos modo "cargando"
   };
 
   const stepTitles = ["Ubicación", "El Recurso", "Autoría", "Clasificación", "Contexto"];
 
+  // --- RENDERIZADO DEL CONTENIDO (Paso a Paso) ---
   const renderStepContent = () => {
     switch (step) {
       case 0: // Zona & Plantel
+        // Filtramos planteles según la zona seleccionada
         const plantelesOptions = data.zona ? ZONES[data.zona].map(p => ({ value: p.name, label: p.name })) : [];
         return (
           <div className="space-y-2">
@@ -75,7 +91,7 @@ export default function App() {
                     options={Object.values(Zone).map(z => ({ value: z, label: z }))}
                     onChange={(val) => {
                         updateField("zona", val);
-                        updateField("planteles", []); 
+                        updateField("planteles", []); // Reseteamos planteles al cambiar zona
                     }}
                 />
              </div>
@@ -95,7 +111,7 @@ export default function App() {
             )}
           </div>
         );
-      case 1: // Resource Info
+      case 1: // Información del Recurso
         return (
           <div className="space-y-2">
             <ValidatedInput 
@@ -118,7 +134,7 @@ export default function App() {
             />
           </div>
         );
-      case 2: // Collaborators
+      case 2: // Colaboradores
         return (
           <div className="space-y-6">
             <SelectInput 
@@ -129,6 +145,7 @@ export default function App() {
             />
             
             <div className="grid grid-cols-1 gap-6">
+                {/* Colaborador 1 */}
                 <motion.div 
                     className="p-6 bg-white rounded-2xl border border-gray-100 shadow-sm"
                     initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
@@ -156,6 +173,7 @@ export default function App() {
                     />
                 </motion.div>
 
+                {/* Colaborador 2 (Condicional) */}
                 {data.numColaboradores === "2" && (
                     <motion.div 
                         className="p-6 bg-white rounded-2xl border border-gray-100 shadow-sm"
@@ -181,7 +199,7 @@ export default function App() {
             </div>
           </div>
         );
-      case 3: // Classification
+      case 3: // Clasificación Pedagógica
         return (
              <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -207,7 +225,7 @@ export default function App() {
                 />
              </div>
         );
-      case 4: // Academic Context
+      case 4: // Contexto Académico
          const subjectsOptions = data.semestre ? SUBJECTS[data.semestre].map(s => ({ value: s, label: s })) : [];
          return (
             <div className="space-y-4">
@@ -239,7 +257,7 @@ export default function App() {
                 />
             </div>
          );
-      case 5: // Finished
+      case 5: // Pantalla Final (Éxito y Envío)
          return (
             <div className="text-center py-12">
                 <motion.div 
@@ -254,30 +272,35 @@ export default function App() {
                     </div>
                 </motion.div>
                 <h2 className="text-4xl font-bold text-gray-800 mb-4 tracking-tight">¡Excelente Trabajo!</h2>
-                <p className="text-gray-500 mb-10 text-lg">Tu recurso ha sido registrado correctamente.</p>
+                <p className="text-gray-500 mb-10 text-lg">Tu recurso está listo para ser registrado en la base de datos.</p>
 
                 <div className="flex flex-col gap-6 justify-center items-center">
+                    {/* Botón Principal de Acción */}
                     <button 
                         onClick={handleDownload}
-                        disabled={isExporting}
+                        disabled={isExporting} // Deshabilita si ya le dio clic
                         className="group relative flex items-center justify-center space-x-3 bg-gradient-to-r from-cobaes-burgundy to-red-900 text-white px-10 py-5 rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all w-full max-w-md disabled:opacity-70 disabled:hover:scale-100 overflow-hidden"
                     >
-                        {/* Shimmer effect */}
+                        {/* Efecto decorativo de brillo que pasa por el botón */}
                         <div className="absolute top-0 -left-full w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 group-hover:animate-shimmer"></div>
                         
                         {isExporting ? (
-                             <span className="animate-pulse font-medium">Generando archivos...</span>
+                             // Mensaje mientras se envía
+                             <span className="animate-pulse font-medium flex items-center">
+                                <CloudUpload size={24} className="mr-2 animate-bounce" />
+                                Registrando y generando comprobante...
+                             </span>
                         ) : (
+                            // Mensaje normal
                             <>
-                                <Download size={28} className="text-white/90" />
-                                <span className="text-xl font-bold tracking-wide">Descargar Documentos</span>
+                                <Sparkles size={28} className="text-white/90" />
+                                <span className="text-xl font-bold tracking-wide">Finalizar Registro</span>
                             </>
                         )}
                     </button>
                     
-                    <p className="text-sm text-gray-400 mt-2 max-w-sm mx-auto flex items-center justify-center">
-                        <Sparkles size={14} className="mr-2 text-cobaes-gold" />
-                        Incluye palabras clave generadas por IA
+                    <p className="text-sm text-gray-400 mt-2 max-w-sm mx-auto text-center">
+                        Se guardará tu información en la base de datos y se descargará un comprobante en Word.
                     </p>
                 </div>
             </div>
@@ -290,13 +313,13 @@ export default function App() {
     <div className="min-h-screen font-sans text-gray-800 bg-gray-50 selection:bg-cobaes-green selection:text-white pb-20 overflow-x-hidden">
       {showConfetti && <Confetti />}
 
-      {/* Decorative Background Elements */}
+      {/* Elementos decorativos de fondo */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
           <div className="absolute -top-[20%] -right-[10%] w-[600px] h-[600px] bg-green-100 rounded-full blur-3xl opacity-60"></div>
           <div className="absolute top-[40%] -left-[10%] w-[500px] h-[500px] bg-red-50 rounded-full blur-3xl opacity-60"></div>
       </div>
 
-      {/* Header */}
+      {/* Encabezado */}
       <header className="relative z-40 pt-8 pb-4 px-6 max-w-5xl mx-auto flex justify-between items-end">
         <div>
             <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Registro <span className="text-cobaes-green">Digital</span></h1>
@@ -309,17 +332,17 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Contenido Principal */}
       <main className="relative z-10 max-w-4xl mx-auto px-4 mt-6">
         
-        {/* Progress Stepper */}
+        {/* Barra de Progreso Superior */}
         {step < 5 && (
             <div className="mb-8 bg-white/60 backdrop-blur-md p-2 rounded-2xl border border-white/50 shadow-sm flex items-center justify-between">
                 {stepTitles.map((title, idx) => (
                     <div key={idx} className={`flex-1 flex flex-col items-center relative ${idx <= step ? 'text-cobaes-green' : 'text-gray-300'}`}>
                         <div className={`w-3 h-3 rounded-full mb-2 transition-all ${idx <= step ? 'bg-cobaes-green scale-125' : 'bg-gray-300'}`}></div>
                         <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:block">{title}</span>
-                        {/* Connecting line */}
+                        {/* Línea conectora entre pasos */}
                         {idx < stepTitles.length - 1 && (
                             <div className={`absolute top-1.5 left-[50%] w-full h-[2px] -z-10 ${idx < step ? 'bg-cobaes-green' : 'bg-gray-200'}`}></div>
                         )}
@@ -328,7 +351,7 @@ export default function App() {
             </div>
         )}
 
-        {/* Dynamic Card */}
+        {/* Tarjeta Dinámica del Formulario */}
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] p-8 md:p-12 border border-white relative overflow-hidden">
             <AnimatePresence mode="wait">
                 <motion.div
@@ -348,7 +371,7 @@ export default function App() {
             </AnimatePresence>
         </div>
 
-        {/* Navigation Actions */}
+        {/* Botones de Navegación Inferior (Atrás / Continuar) */}
         {step < 5 && (
             <div className="mt-8 flex justify-between items-center px-4">
                 <button 

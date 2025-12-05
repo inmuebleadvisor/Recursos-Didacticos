@@ -1,28 +1,41 @@
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, HeadingLevel, AlignmentType, Header } from "docx";
-import * as XLSX from "xlsx";
 import FileSaver from "file-saver";
-import { FormData, ExcelRow } from "../types";
+import { FormData } from "../types";
 import { generateMetadata } from "./geminiService";
 
-// Helper to create the Word document
+// ÚLTIMA MODIFICACION: 04/12/2025
+// DESCRIPCIÓN: Servicio para exportar datos. Gestiona la conexión con Google Sheets y la generación del comprobante en Word.
+
+// --- CONFIGURACIÓN DE CONEXIÓN ---
+// MODIFICACIÓN: Se utiliza la variable de entorno para seguridad. 
+// Si no encuentra la variable (ej. en desarrollo local sin .env), usa una cadena vacía para evitar errores de compilación, 
+// aunque se valida más adelante.
+const GOOGLE_SCRIPT_URL = process.env.GOOGLE_SCRIPT_URL || "";
+
+/**
+ * Función auxiliar para crear el documento de Word (Comprobante).
+ * Mantenemos esto igual para que el usuario tenga un respaldo físico con el diseño corporativo.
+ */
 const createWordDocument = async (data: FormData) => {
-  // Define styles
+  // Definición de estilos corporativos (colores y fuentes)
   const greenColor = "006847";
   const burgundyColor = "802434";
   const fontFace = "Georgia";
-  const fontSize = 20; // 20 half-points = 10pt
+  const fontSize = 20; // En Word, 20 half-points equivalen a 10pt
 
-  // Create table rows for Q&A
+  // Helper didáctico: Función para crear filas de la tabla de forma limpia y repetible
   const createRow = (label: string, value: string) => {
     return new TableRow({
       children: [
+        // Celda de la etiqueta (Izquierda, fondo verde claro)
         new TableCell({
           width: { size: 30, type: WidthType.PERCENTAGE },
-          shading: { fill: "f0fdf4" }, // Light green bg
+          shading: { fill: "f0fdf4" }, 
           children: [new Paragraph({ children: [new TextRun({ text: label, bold: true, color: greenColor, font: fontFace, size: fontSize })] })],
           verticalAlign: "center",
           margins: { top: 100, bottom: 100, left: 100, right: 100 },
         }),
+        // Celda del valor (Derecha)
         new TableCell({
           width: { size: 70, type: WidthType.PERCENTAGE },
           children: [new Paragraph({ children: [new TextRun({ text: value, font: fontFace, size: fontSize })] })],
@@ -33,10 +46,12 @@ const createWordDocument = async (data: FormData) => {
     });
   };
 
+  // Formateamos los colaboradores dependiendo de si es 1 o 2
   const collaborators = data.numColaboradores === "1" 
     ? `${data.rol1}: ${data.nombre1}` 
     : `${data.rol1}: ${data.nombre1}\n${data.rol2}: ${data.nombre2}`;
 
+  // Construcción de la tabla principal con bordes y estilos definidos
   const table = new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     borders: {
@@ -63,6 +78,7 @@ const createWordDocument = async (data: FormData) => {
     ],
   });
 
+  // Estructura del documento final (Encabezado y cuerpo)
   const doc = new Document({
     sections: [
       {
@@ -70,9 +86,8 @@ const createWordDocument = async (data: FormData) => {
         headers: {
             default: new Header({
                 children: [
-                    // Removed Image as requested
                     new Paragraph({
-                        text: "Dirección Académica",
+                        text: "Dirección Académica - Registro Digital",
                         alignment: AlignmentType.RIGHT,
                         border: { bottom: { style: BorderStyle.SINGLE, size: 6, space: 1, color: burgundyColor } },
                         children: [new TextRun({ font: fontFace, size: fontSize, color: "54565A" })]
@@ -86,9 +101,9 @@ const createWordDocument = async (data: FormData) => {
                 new TextRun({ 
                     text: data.titulo, 
                     bold: true, 
-                    color: "000000", // Black Title
+                    color: "000000", 
                     font: fontFace,
-                    size: 28 // Slightly larger for title (14pt)
+                    size: 28 
                 })
             ],
             alignment: AlignmentType.CENTER,
@@ -98,9 +113,9 @@ const createWordDocument = async (data: FormData) => {
           new Paragraph({
              children: [
                  new TextRun({ 
-                     text: "Generado automáticamente por el Sistema de Registro de Recursos.",
+                     text: "Este documento sirve como comprobante de tu registro en el sistema central.",
                      font: fontFace,
-                     size: 16, // 8pt
+                     size: 16, 
                      italics: true,
                      color: "888888"
                  })
@@ -113,25 +128,38 @@ const createWordDocument = async (data: FormData) => {
     ],
   });
 
+  // Generamos el archivo blob y forzamos la descarga
   const blob = await Packer.toBlob(doc);
   const saveAs = (FileSaver as any).saveAs || FileSaver;
-  saveAs(blob, `${data.titulo}.docx`);
+  saveAs(blob, `Registro_${data.titulo.substring(0, 15)}.docx`);
 };
 
-// Helper to create Excel
-const createExcel = (data: FormData, aiMeta: { keywords: string[], header: string }) => {
-  const row: ExcelRow = {
-    number: 1,
+/**
+ * NUEVA FUNCIÓN: Envío de datos a Google Sheets
+ * Esta función toma los datos del formulario y los envía a tu Web App de Google.
+ */
+const saveToGoogleSheets = async (data: FormData, aiMeta: { keywords: string[], header: string }) => {
+  
+  // Verificación de seguridad: Si no hay URL configurada, advertimos.
+  if (!GOOGLE_SCRIPT_URL) {
+      console.error("FALTA CONFIGURACIÓN: No se encontró la URL del Script en el archivo .env");
+      alert("Error de configuración: No se pudo conectar con el servidor. Verifica tu archivo .env.");
+      return false;
+  }
+
+  // 1. Preparamos el "Paquete" de datos (Payload)
+  // Las claves coinciden con las que espera tu función doPost en Google Apps Script.
+  const payload = {
     titulo: data.titulo,
-    link: data.tipoRecurso,
+    linkTipo: data.tipoRecurso, // Mapeo: Link del recurso
     descripcion: data.descripcion,
-    keyword1: aiMeta.keywords[0] || "",
-    keyword2: aiMeta.keywords[1] || "",
-    keyword3: aiMeta.keywords[2] || "",
+    palabraClave1: aiMeta.keywords[0] || "",
+    palabraClave2: aiMeta.keywords[1] || "",
+    palabraClave3: aiMeta.keywords[2] || "",
     responsabilidad: data.numColaboradores === "1" 
         ? `${data.rol1}: ${data.nombre1}` 
         : `${data.rol1}: ${data.nombre1}; ${data.rol2}: ${data.nombre2}`,
-    tipoEducativo: data.tipoRecursoEducativo,
+    tipoRecurso: data.tipoRecursoEducativo, // Mapeo: Tipo educativo (Experiencia, Herramienta, etc.)
     categoria: data.categoria,
     usoEducativo: data.objetivo,
     encabezados: aiMeta.header,
@@ -139,34 +167,38 @@ const createExcel = (data: FormData, aiMeta: { keywords: string[], header: strin
     asignatura: data.asignatura
   };
 
-  // Define headers as per prompt instructions
-  const headers = [
-      "Número", "Título del recurso", "Link o tipo de recurso", "Descripción", 
-      "Palabra clave (1)", "Palabra clave (2)", "Palabras clave (3)", 
-      "Mención de responsabilidad", "Tipo de recurso educativo", "Categoría", 
-      "Descripción del uso educativo (objetivo)", "Encabezados", "Semestre", "Asignatura"
-  ];
-  
-  const values = [
-      row.number, row.titulo, row.link, row.descripcion, 
-      row.keyword1, row.keyword2, row.keyword3, 
-      row.responsabilidad, row.tipoEducativo, row.categoria,
-      row.usoEducativo, row.encabezados, row.semestre, row.asignatura
-  ];
+  try {
+    // 2. Enviamos el paquete usando 'fetch'
+    // 'no-cors' permite enviar datos a Google sin que el navegador bloquee la solicitud por seguridad estricta.
+    await fetch(GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8",
+      },
+    });
+    
+    console.log("Datos enviados a Google Sheets correctamente");
+    return true;
 
-  const ws = XLSX.utils.aoa_to_sheet([headers, values]);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Recursos");
-  XLSX.writeFile(wb, "Registro_Recursos.xlsx");
+  } catch (error) {
+    console.error("Error al enviar a Google Sheets:", error);
+    alert("Hubo un error de conexión con la nube, pero se descargará tu respaldo en Word.");
+    return false;
+  }
 };
 
+/**
+ * FUNCIÓN PRINCIPAL EXPORTADA
+ * Orquesta todo el proceso: IA -> Nube -> Word
+ */
 export const handleExports = async (data: FormData, logoUrl: string) => {
-    // 1. Generate Metadata with Gemini
+    // 1. Generar Metadatos con Inteligencia Artificial
     const meta = await generateMetadata(data);
     
-    // 2. Export Word
-    await createWordDocument(data);
+    // 2. Guardar en la base de datos (Google Sheets)
+    await saveToGoogleSheets(data, meta);
 
-    // 3. Export Excel
-    createExcel(data, meta);
+    // 3. Generar y descargar comprobante en Word
+    await createWordDocument(data);
 };
