@@ -1,11 +1,13 @@
 // api/index.js
-// ÚLTIMA MODIFICACION: 04/12/2025
-// DESCRIPCIÓN: Backend Serverless seguro con validación de datos básica y protección de headers.
+// ÚLTIMA MODIFICACION: 05/12/2025
+// DESCRIPCIÓN: Backend Serverless seguro con validación, protección de headers y Rate Limiting.
+// NOTA DIDÁCTICA: Implementamos el limitador de peticiones para proteger tu cuota de Gemini y tu base de datos de abusos.
 
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from "@google/genai";
+import rateLimit from 'express-rate-limit'; // 🔍 Paso 1: Importamos la librería de limitación
 
 // Cargar variables de entorno
 dotenv.config({ path: './.env.local' });
@@ -40,6 +42,23 @@ app.use(express.json({ limit: '10kb' }));
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const GOOGLE_SCRIPT_URL = process.env.GOOGLE_SCRIPT_URL;
 
+// --- 🛡️ CONFIGURACIÓN DE RATE LIMITING ---
+// Didáctico: Este middleware limita las peticiones de una misma IP.
+// Es crucial para proteger tu cuota de Gemini y tu base de datos.
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // La ventana de tiempo es de 15 minutos (900,000 milisegundos)
+  max: 100, // Límite de 100 peticiones dentro de esa ventana por cada IP.
+  standardHeaders: true, // Incluye headers estándar de límite (RateLimit-Limit, RateLimit-Remaining)
+  legacyHeaders: false, // Deshabilita headers X-RateLimit-* antiguos
+  message: (req, res) => {
+    // Mensaje personalizado en español que se envía al usuario si excede el límite (código 429)
+    res.status(429).json({ 
+        error: "Has excedido el límite de peticiones. Por favor, intenta de nuevo en 15 minutos." 
+    });
+  }
+});
+
 // --- FUNCIONES DE VALIDACIÓN (Didáctico: Nunca confíes en los datos que entran) ---
 
 // Validamos que el objeto tenga los campos mínimos necesarios y que sean strings
@@ -65,8 +84,9 @@ app.get('/', (req, res) => {
     res.status(200).send('API Segura de COBAES activa.');
 });
 
-// RUTA: Proxy seguro para Google Sheets
-app.post('/save-resource', async (req, res) => {
+// RUTA: Proxy seguro para Google Sheets (APLICAMOS LIMITE)
+// Didáctico: Solo se permite acceder 100 veces cada 15 minutos a esta ruta de guardado.
+app.post('/save-resource', apiLimiter, async (req, res) => {
     try {
         const payload = req.body;
 
@@ -100,7 +120,9 @@ app.post('/save-resource', async (req, res) => {
     }
 });
 
-app.post('/validate', async (req, res) => {
+// RUTA: Validación de Texto con Gemini (APLICAMOS LIMITE)
+// Didáctico: Limita las peticiones de validación que usan la IA para ahorrar recursos y costos.
+app.post('/validate', apiLimiter, async (req, res) => {
     try {
         const { text, context } = req.body;
         
@@ -122,7 +144,9 @@ app.post('/validate', async (req, res) => {
     }
 });
 
-app.post('/metadata', async (req, res) => {
+// RUTA: Generación de Metadata con Gemini (APLICAMOS LIMITE)
+// Didáctico: Limita las peticiones de generación de metadatos, otra función costosa de IA.
+app.post('/metadata', apiLimiter, async (req, res) => {
     try {
         const { data } = req.body;
 
