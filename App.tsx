@@ -159,7 +159,7 @@ export default function App() {
                             >
                                 <div className="flex items-center mb-4">
                                     <div className="w-8 h-8 rounded-full bg-cobaes-burgundy text-white flex items-center justify-center font-bold mr-3">1</div>
-                                    <h3 className="font-bold text-gray-800">Colaborador Principal</h3>
+                                    <h3 className="font-bold text-gray-800">Colaborador</h3>
                                 </div>
                                 {data.numColaboradores === "1" ? (
                                     <div className="mb-4 inline-block px-3 py-1 bg-gray-100 rounded-lg text-sm font-medium text-gray-600">
@@ -188,7 +188,7 @@ export default function App() {
                                 >
                                     <div className="flex items-center mb-4">
                                         <div className="w-8 h-8 rounded-full bg-cobaes-green text-white flex items-center justify-center font-bold mr-3">2</div>
-                                        <h3 className="font-bold text-gray-800">Segundo Colaborador</h3>
+                                        <h3 className="font-bold text-gray-800">Colaborador</h3>
                                     </div>
                                     <SelectInput
                                         label="7. Mención de responsabilidad"
@@ -428,8 +428,8 @@ export default function App() {
                             onClick={nextStep}
                             disabled={!canProceed()}
                             className={`group flex items-center px-8 py-3.5 rounded-xl font-bold shadow-lg transition-all transform active:scale-95 ${canProceed()
-                                    ? "bg-gray-900 text-white hover:bg-gray-800 hover:shadow-xl hover:-translate-y-1"
-                                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                ? "bg-gray-900 text-white hover:bg-gray-800 hover:shadow-xl hover:-translate-y-1"
+                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
                                 }`}
                         >
                             {step === 4 ? "Finalizar Registro" : "Continuar"}
