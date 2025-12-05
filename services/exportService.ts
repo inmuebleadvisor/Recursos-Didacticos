@@ -11,7 +11,7 @@ import { generateMetadata } from "./geminiService";
 
 // --- CONFIGURACIÓN DE CONEXIÓN SEGURA ---
 // Usamos la URL relativa para comunicarnos con nuestro propio backend (Vercel Serverless Function).
-const API_URL = "/api"; 
+const API_URL = "/api";
 // NOTA DIDÁCTICA: Eliminamos la constante GOOGLE_SCRIPT_URL de aquí, ya que el backend la usará.
 
 /**
@@ -32,7 +32,7 @@ const createWordDocument = async (data: FormData) => {
         // Celda de la etiqueta (Izquierda, fondo verde claro)
         new TableCell({
           width: { size: 30, type: WidthType.PERCENTAGE },
-          shading: { fill: "f0fdf4" }, 
+          shading: { fill: "f0fdf4" },
           children: [new Paragraph({ children: [new TextRun({ text: label, bold: true, color: greenColor, font: fontFace, size: fontSize })] })],
           verticalAlign: "center",
           margins: { top: 100, bottom: 100, left: 100, right: 100 },
@@ -42,27 +42,27 @@ const createWordDocument = async (data: FormData) => {
           width: { size: 70, type: WidthType.PERCENTAGE },
           children: [new Paragraph({ children: [new TextRun({ text: value, font: fontFace, size: fontSize })] })],
           verticalAlign: "center",
-           margins: { top: 100, bottom: 100, left: 100, right: 100 },
+          margins: { top: 100, bottom: 100, left: 100, right: 100 },
         }),
       ],
     });
   };
 
   // Formateamos los colaboradores dependiendo de si es 1 o 2
-  const collaborators = data.numColaboradores === "1" 
-    ? `${data.rol1}: ${data.nombre1}` 
+  const collaborators = data.numColaboradores === "1"
+    ? `${data.rol1}: ${data.nombre1}`
     : `${data.rol1}: ${data.nombre1}\n${data.rol2}: ${data.nombre2}`;
 
   // Construcción de la tabla principal con bordes y estilos definidos
   const table = new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     borders: {
-        top: { style: BorderStyle.SINGLE, size: 1, color: greenColor },
-        bottom: { style: BorderStyle.SINGLE, size: 1, color: greenColor },
-        left: { style: BorderStyle.SINGLE, size: 1, color: greenColor },
-        right: { style: BorderStyle.SINGLE, size: 1, color: greenColor },
-        insideHorizontal: { style: BorderStyle.DOTTED, size: 1, color: "aaaaaa" },
-        insideVertical: { style: BorderStyle.SINGLE, size: 1, color: greenColor },
+      top: { style: BorderStyle.SINGLE, size: 1, color: greenColor },
+      bottom: { style: BorderStyle.SINGLE, size: 1, color: greenColor },
+      left: { style: BorderStyle.SINGLE, size: 1, color: greenColor },
+      right: { style: BorderStyle.SINGLE, size: 1, color: greenColor },
+      insideHorizontal: { style: BorderStyle.DOTTED, size: 1, color: "aaaaaa" },
+      insideVertical: { style: BorderStyle.SINGLE, size: 1, color: greenColor },
     },
     rows: [
       createRow("Zona Educativa", data.zona),
@@ -86,44 +86,44 @@ const createWordDocument = async (data: FormData) => {
       {
         properties: {},
         headers: {
-            default: new Header({
-                children: [
-                    new Paragraph({
-                        text: "Dirección Académica - Registro Digital",
-                        alignment: AlignmentType.RIGHT,
-                        border: { bottom: { style: BorderStyle.SINGLE, size: 6, space: 1, color: burgundyColor } },
-                        children: [new TextRun({ font: fontFace, size: fontSize, color: "54565A" })]
-                    })
-                ]
-            })
+          default: new Header({
+            children: [
+              new Paragraph({
+                text: "Dirección Académica - Registro Digital",
+                alignment: AlignmentType.RIGHT,
+                border: { bottom: { style: BorderStyle.SINGLE, size: 6, space: 1, color: burgundyColor } },
+                children: [new TextRun({ font: fontFace, size: fontSize, color: "54565A" })]
+              })
+            ]
+          })
         },
         children: [
           new Paragraph({
             children: [
-                new TextRun({ 
-                    text: data.titulo, 
-                    bold: true, 
-                    color: "000000", 
-                    font: fontFace,
-                    size: 28 
-                })
+              new TextRun({
+                text: data.titulo,
+                bold: true,
+                color: "000000",
+                font: fontFace,
+                size: 28
+              })
             ],
             alignment: AlignmentType.CENTER,
             spacing: { after: 300, before: 300 },
           }),
           table,
           new Paragraph({
-             children: [
-                 new TextRun({ 
-                     text: "Este documento sirve como comprobante de tu registro en el sistema central.",
-                     font: fontFace,
-                     size: 16, 
-                     italics: true,
-                     color: "888888"
-                 })
-             ],
-             alignment: AlignmentType.CENTER,
-             spacing: { before: 500 },
+            children: [
+              new TextRun({
+                text: "Este documento sirve como comprobante de tu registro en el sistema central.",
+                font: fontFace,
+                size: 16,
+                italics: true,
+                color: "888888"
+              })
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 500 },
           })
         ],
       },
@@ -142,7 +142,7 @@ const createWordDocument = async (data: FormData) => {
  * El backend (api/index.js) es quien tiene el secreto (GOOGLE_SCRIPT_URL) y hace el envío final.
  */
 const saveToGoogleSheets = async (data: FormData, aiMeta: { keywords: string[], header: string }) => {
-  
+
   // No necesitamos la URL aquí, el proxy del servidor la manejará.
 
   // 1. Preparamos el "Paquete" de datos (Payload)
@@ -154,9 +154,9 @@ const saveToGoogleSheets = async (data: FormData, aiMeta: { keywords: string[], 
     palabraClave1: aiMeta.keywords[0] || "",
     palabraClave2: aiMeta.keywords[1] || "",
     palabraClave3: aiMeta.keywords[2] || "",
-    responsabilidad: data.numColaboradores === "1" 
-        ? `${data.rol1}: ${data.nombre1}` 
-        : `${data.rol1}: ${data.nombre1}; ${data.rol2}: ${data.nombre2}`,
+    responsabilidad: data.numColaboradores === "1"
+      ? `${data.rol1}: ${data.nombre1}`
+      : `${data.rol1}: ${data.nombre1}; ${data.rol2}: ${data.nombre2}`,
     tipoRecurso: data.tipoRecursoEducativo, // Mapeo: Tipo educativo (Experiencia, Herramienta, etc.)
     categoria: data.categoria,
     usoEducativo: data.objetivo,
@@ -172,13 +172,13 @@ const saveToGoogleSheets = async (data: FormData, aiMeta: { keywords: string[], 
       body: JSON.stringify(payload),
       headers: {
         // CAMBIO IMPORTANTE: Enviamos JSON estándar, que es lo que espera el proxy de Express/Vercel
-        "Content-Type": "application/json", 
+        "Content-Type": "application/json",
       },
     });
-    
+
     // Si el servidor proxy nos responde que no fue exitoso (ej. 500 Internal Server Error)
     if (!response.ok) {
-        throw new Error(`Error en el servidor proxy: ${response.statusText}`);
+      throw new Error(`Error en el servidor proxy: ${response.statusText}`);
     }
 
     console.log("Datos enviados al servidor proxy correctamente");
@@ -187,7 +187,7 @@ const saveToGoogleSheets = async (data: FormData, aiMeta: { keywords: string[], 
   } catch (error) {
     console.error("Error al enviar al proxy:", error);
     // Mensaje de fallback al usuario, ya que la comunicación con el servidor falló
-    alert("Hubo un error de conexión con el servidor de la nube, pero se descargará tu respaldo en Word.");
+    // alert("Hubo un error de conexión con el servidor de la nube, pero se descargará tu respaldo en Word.");
     return false;
   }
 };
@@ -197,14 +197,14 @@ const saveToGoogleSheets = async (data: FormData, aiMeta: { keywords: string[], 
  * Orquesta todo el proceso: IA -> Nube (vía Proxy) -> Word
  */
 export const handleExports = async (data: FormData, logoUrl: string): Promise<boolean> => {
-    // 1. Generar Metadatos con Inteligencia Artificial
-    const meta = await generateMetadata(data);
-    
-    // 2. Guardar en la base de datos (Google Sheets) vía el proxy seguro
-    const saved = await saveToGoogleSheets(data, meta);
+  // 1. Generar Metadatos con Inteligencia Artificial
+  const meta = await generateMetadata(data);
 
-    // 3. Generar y descargar comprobante en Word
-    await createWordDocument(data);
+  // 2. Guardar en la base de datos (Google Sheets) vía el proxy seguro
+  const saved = await saveToGoogleSheets(data, meta);
 
-    return saved;
+  // 3. Generar y descargar comprobante en Word
+  await createWordDocument(data);
+
+  return saved;
 };
