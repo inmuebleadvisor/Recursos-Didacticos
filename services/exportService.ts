@@ -196,13 +196,15 @@ const saveToGoogleSheets = async (data: FormData, aiMeta: { keywords: string[], 
  * FUNCIÓN PRINCIPAL EXPORTADA
  * Orquesta todo el proceso: IA -> Nube (vía Proxy) -> Word
  */
-export const handleExports = async (data: FormData, logoUrl: string) => {
+export const handleExports = async (data: FormData, logoUrl: string): Promise<boolean> => {
     // 1. Generar Metadatos con Inteligencia Artificial
     const meta = await generateMetadata(data);
     
     // 2. Guardar en la base de datos (Google Sheets) vía el proxy seguro
-    await saveToGoogleSheets(data, meta);
+    const saved = await saveToGoogleSheets(data, meta);
 
     // 3. Generar y descargar comprobante en Word
     await createWordDocument(data);
+
+    return saved;
 };
