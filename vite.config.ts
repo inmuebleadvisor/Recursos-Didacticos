@@ -3,10 +3,12 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 // ÚLTIMA MODIFICACION: 04/12/2025
-// DESCRIPCIÓN: Configuración de Vite. Se agregan las variables de entorno para que sean accesibles en el frontend.
+// DESCRIPCIÓN: Configuración de Vite corregida por seguridad.
+// IMPORTANTE: Ya NO inyectamos claves secretas (API KEYS) al cliente. 
+// Las variables sensibles solo deben vivir en el entorno del servidor (Vercel).
 
 export default defineConfig(({ mode }) => {
-    // Carga las variables de entorno desde el archivo .env según el modo (development/production)
+    // Carga variables solo para uso local de Vite, pero no las exponemos por defecto
     const env = loadEnv(mode, '.', '');
     
     return {
@@ -15,12 +17,11 @@ export default defineConfig(({ mode }) => {
         host: '0.0.0.0',
       },
       plugins: [react()],
-      // Aquí definimos constantes globales que reemplazan "process.env.VARIABLE" por su valor real al compilar
+      // ELIMINAMOS EL BLOQUE 'define' QUE EXPONÍA LAS CLAVES.
+      // El frontend no necesita 'process.env' para las claves, ya que consumirá la API propia.
       define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        // NUEVA LÍNEA: Inyectamos la URL del Script
-        'process.env.GOOGLE_SCRIPT_URL': JSON.stringify(env.GOOGLE_SCRIPT_URL)
+        // Si necesitas variables públicas (no secretas), usa el prefijo VITE_
+        // Ejemplo: 'import.meta.env.VITE_APP_VERSION': JSON.stringify(env.npm_package_version)
       },
       resolve: {
         alias: {

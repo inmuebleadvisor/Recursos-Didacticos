@@ -3,14 +3,16 @@ import FileSaver from "file-saver";
 import { FormData } from "../types";
 import { generateMetadata } from "./geminiService";
 
-// ÚLTIMA MODIFICACION: 04/12/2025
-// DESCRIPCIÓN: Servicio para exportar datos. Gestiona la conexión con Google Sheets y la generación del comprobante en Word.
+// ÚLTIMA MODIFICACION: 05/12/2025
+// DESCRIPCIÓN: Servicio para exportar datos. 
+// APLICACIÓN DE PARCHE DE SEGURIDAD: Se elimina la variable GOOGLE_SCRIPT_URL del frontend 
+// y se utiliza un proxy seguro en el backend (/api/save-resource).
+// El frontend solo se comunica con su propio servidor, protegiendo así la llave secreta.
 
-// --- CONFIGURACIÓN DE CONEXIÓN ---
-// MODIFICACIÓN: Se utiliza la variable de entorno para seguridad. 
-// Si no encuentra la variable (ej. en desarrollo local sin .env), usa una cadena vacía para evitar errores de compilación, 
-// aunque se valida más adelante.
-const GOOGLE_SCRIPT_URL = process.env.GOOGLE_SCRIPT_URL || "";
+// --- CONFIGURACIÓN DE CONEXIÓN SEGURA ---
+// Usamos la URL relativa para comunicarnos con nuestro propio backend (Vercel Serverless Function).
+const API_URL = "/api"; 
+// NOTA DIDÁCTICA: Eliminamos la constante GOOGLE_SCRIPT_URL de aquí, ya que el backend la usará.
 
 /**
  * Función auxiliar para crear el documento de Word (Comprobante).
@@ -135,20 +137,16 @@ const createWordDocument = async (data: FormData) => {
 };
 
 /**
- * NUEVA FUNCIÓN: Envío de datos a Google Sheets
- * Esta función toma los datos del formulario y los envía a tu Web App de Google.
+ * FUNCIÓN CRÍTICA DE SEGURIDAD: Envío de datos al proxy de Google Sheets
+ * Esta función ahora llama a NUESTRA propia API Serverless (/api/save-resource).
+ * El backend (api/index.js) es quien tiene el secreto (GOOGLE_SCRIPT_URL) y hace el envío final.
  */
 const saveToGoogleSheets = async (data: FormData, aiMeta: { keywords: string[], header: string }) => {
   
-  // Verificación de seguridad: Si no hay URL configurada, advertimos.
-  if (!GOOGLE_SCRIPT_URL) {
-      console.error("FALTA CONFIGURACIÓN: No se encontró la URL del Script en el archivo .env");
-      alert("Error de configuración: No se pudo conectar con el servidor. Verifica tu archivo .env.");
-      return false;
-  }
+  // No necesitamos la URL aquí, el proxy del servidor la manejará.
 
   // 1. Preparamos el "Paquete" de datos (Payload)
-  // Las claves coinciden con las que espera tu función doPost en Google Apps Script.
+  // Enviamos todo el payload que el servidor necesita para reenviar a Google Apps Script.
   const payload = {
     titulo: data.titulo,
     linkTipo: data.tipoRecurso, // Mapeo: Link del recurso
@@ -168,35 +166,41 @@ const saveToGoogleSheets = async (data: FormData, aiMeta: { keywords: string[], 
   };
 
   try {
-    // 2. Enviamos el paquete usando 'fetch'
-    // 'no-cors' permite enviar datos a Google sin que el navegador bloquee la solicitud por seguridad estricta.
-    await fetch(GOOGLE_SCRIPT_URL, {
+    // 2. Enviamos el paquete al PROXY seguro de nuestro backend
+    const response = await fetch(`${API_URL}/save-resource`, {
       method: "POST",
       body: JSON.stringify(payload),
       headers: {
-        "Content-Type": "text/plain;charset=utf-8",
+        // CAMBIO IMPORTANTE: Enviamos JSON estándar, que es lo que espera el proxy de Express/Vercel
+        "Content-Type": "application/json", 
       },
     });
     
-    console.log("Datos enviados a Google Sheets correctamente");
+    // Si el servidor proxy nos responde que no fue exitoso (ej. 500 Internal Server Error)
+    if (!response.ok) {
+        throw new Error(`Error en el servidor proxy: ${response.statusText}`);
+    }
+
+    console.log("Datos enviados al servidor proxy correctamente");
     return true;
 
   } catch (error) {
-    console.error("Error al enviar a Google Sheets:", error);
-    alert("Hubo un error de conexión con la nube, pero se descargará tu respaldo en Word.");
+    console.error("Error al enviar al proxy:", error);
+    // Mensaje de fallback al usuario, ya que la comunicación con el servidor falló
+    alert("Hubo un error de conexión con el servidor de la nube, pero se descargará tu respaldo en Word.");
     return false;
   }
 };
 
 /**
  * FUNCIÓN PRINCIPAL EXPORTADA
- * Orquesta todo el proceso: IA -> Nube -> Word
+ * Orquesta todo el proceso: IA -> Nube (vía Proxy) -> Word
  */
 export const handleExports = async (data: FormData, logoUrl: string) => {
     // 1. Generar Metadatos con Inteligencia Artificial
     const meta = await generateMetadata(data);
     
-    // 2. Guardar en la base de datos (Google Sheets)
+    // 2. Guardar en la base de datos (Google Sheets) vía el proxy seguro
     await saveToGoogleSheets(data, meta);
 
     // 3. Generar y descargar comprobante en Word
