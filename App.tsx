@@ -306,7 +306,7 @@ export default function App() {
                                         )}
                                     </button>
                                     <p className="text-sm text-gray-400 mt-2 max-w-sm mx-auto text-center">
-                                        Se guardará tu información en la base de datos y se descargará un comprobante en Word.
+                                        Se guardará tu información en la base de datos y se descargará una ficha de recurso en Word.
                                     </p>
                                 </>
                             )}
@@ -333,7 +333,7 @@ export default function App() {
                                 >
                                     <h3 className="text-xl font-bold text-red-800 mb-2">Hubo un problema</h3>
                                     <p className="text-red-700 mb-4">
-                                        No pudimos conectar con la base de datos central, pero tu comprobante Word sí se generó como respaldo.
+                                        No pudimos conectar con la base de datos central, pero tu ficha del recurso Word sí se generó como respaldo.
                                     </p>
                                     <div className="bg-white p-4 rounded-xl border border-red-100 shadow-sm">
                                         <p className="font-bold text-gray-800">Por favor contacta a:</p>
