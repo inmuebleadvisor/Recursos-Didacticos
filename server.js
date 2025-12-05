@@ -22,7 +22,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 app.post('/api/validate', async (req, res) => {
     try {
         const { text, context } = req.body;
-        
+
         // 🔍 PROMPT EXACTO DE TU CÓDIGO ORIGINAL CONSERVADO AQUÍ:
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash', // Conservamos tu versión de modelo
