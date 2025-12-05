@@ -319,7 +319,7 @@ export default function App() {
                                 >
                                     <h3 className="text-xl font-bold text-green-800 mb-2">¡Registro Exitoso!</h3>
                                     <p className="text-green-700">
-                                        Tu información ha sido almacenada correctamente en nuestra base de datos y tu comprobante se ha descargado.
+                                        Tu información ha sido almacenada correctamente en nuestra base de datos y tu Ficha del Recurso se ha descargado.
                                     </p>
                                     <p className="text-sm text-green-600 mt-4 font-medium">Gracias por tu contribución.</p>
                                 </motion.div>
