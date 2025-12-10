@@ -148,6 +148,9 @@ const saveToGoogleSheets = async (data: FormData, aiMeta: { keywords: string[], 
   // 1. Preparamos el "Paquete" de datos (Payload)
   // Enviamos todo el payload que el servidor necesita para reenviar a Google Apps Script.
   const payload = {
+    // NUEVOS CAMPOS: Zona y Planteles (alineados con la AppScript)
+    zona: data.zona,
+    planteles: data.planteles.join(", "), // Convertimos array a string
     titulo: data.titulo,
     linkTipo: data.tipoRecurso, // Mapeo: Link del recurso
     descripcion: data.descripcion,
