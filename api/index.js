@@ -27,8 +27,8 @@ app.use(cors({
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      console.warn(`Origen bloqueado por CORS: ${origin}`);
-      callback(new Error('Bloqueado por CORS: Origen no permitido'));
+      console.error(`[CORS-DEBUG] Bloqueando acceso desde: ${origin}`);
+      callback(new Error(`Bloqueado por CORS. Origen no permitido: ${origin}`));
     }
   },
   methods: ['POST', 'GET', 'OPTIONS'],
