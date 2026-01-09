@@ -19,6 +19,7 @@ export default function App() {
     const [showConfetti, setShowConfetti] = useState(false); // Efecto de celebración
     const [isExporting, setIsExporting] = useState(false); // Estado de carga (loading) al enviar datos
     const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'success' | 'error'>('idle'); // Estado del resultado del envío
+    const [errorMessage, setErrorMessage] = useState<string>(""); // Mensaje de error específico
 
     // --- FUNCIONES DE NAVEGACIÓN ---
 
@@ -71,13 +72,14 @@ export default function App() {
     const handleDownload = async () => {
         setIsExporting(true); // Activamos modo "cargando"
         // Llamamos al servicio que conecta con Google Sheets y crea el Word
-        const success = await handleExports(data, LOGO_URL);
+        const result = await handleExports(data, LOGO_URL);
         setIsExporting(false); // Desactivamos modo "cargando"
 
-        if (success) {
+        if (result.success) {
             setSubmissionStatus('success');
         } else {
             setSubmissionStatus('error');
+            setErrorMessage(result.error || "No pudimos conectar con la base de datos central");
         }
     };
 
@@ -333,7 +335,7 @@ export default function App() {
                                 >
                                     <h3 className="text-xl font-bold text-red-800 mb-2">Hubo un problema</h3>
                                     <p className="text-red-700 mb-4">
-                                        No pudimos conectar con la base de datos central, pero tu ficha del recurso Word sí se generó como respaldo.
+                                        {errorMessage || "No pudimos conectar con la base de datos central, pero tu ficha del recurso Word sí se generó como respaldo."}
                                     </p>
                                     <div className="bg-white p-4 rounded-xl border border-red-100 shadow-sm">
                                         <p className="font-bold text-gray-800">Por favor contacta a:</p>

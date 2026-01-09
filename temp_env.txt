@@ -1,0 +1,7 @@
+# Configuración de claves API y URLs externas
+# NO subas este archivo a GitHub
+
+# Tu clave de Gemini (ya la tenías)
+GEMINI_API_KEY=PLACEHOLDER_API_KEY
+# URL de tu Web App de Google Apps Script
+GOOGLE_SCRIPT_URL=https://script.google.com/macros/s/AKfycbzNCKIHnUa-iMy1re1A0-NKjP6bhOxWpo_jz6h5znQWDcuexJImPfeOGa6zTO1VtF3JjQ/exec

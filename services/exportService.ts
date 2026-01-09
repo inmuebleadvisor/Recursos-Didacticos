@@ -141,7 +141,7 @@ const createWordDocument = async (data: FormData) => {
  * Esta función ahora llama a NUESTRA propia API Serverless (/api/save-resource).
  * El backend (api/index.js) es quien tiene el secreto (GOOGLE_SCRIPT_URL) y hace el envío final.
  */
-const saveToGoogleSheets = async (data: FormData, aiMeta: { keywords: string[], header: string }) => {
+const saveToGoogleSheets = async (data: FormData, aiMeta: { keywords: string[], header: string }): Promise<{ success: boolean; error?: string }> => {
 
   // No necesitamos la URL aquí, el proxy del servidor la manejará.
 
@@ -179,19 +179,21 @@ const saveToGoogleSheets = async (data: FormData, aiMeta: { keywords: string[], 
       },
     });
 
-    // Si el servidor proxy nos responde que no fue exitoso (ej. 500 Internal Server Error)
+    // Si el servidor proxy nos responde que no fue exitoso
     if (!response.ok) {
-      throw new Error(`Error en el servidor proxy: ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Error en el servidor proxy: ${response.statusText}`);
     }
 
     console.log("Datos enviados al servidor proxy correctamente");
-    return true;
+    return { success: true };
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error al enviar al proxy:", error);
-    // Mensaje de fallback al usuario, ya que la comunicación con el servidor falló
-    // alert("Hubo un error de conexión con el servidor de la nube, pero se descargará tu respaldo en Word.");
-    return false;
+    return {
+      success: false,
+      error: error.message || "No pudimos conectar con la base de datos central"
+    };
   }
 };
 
@@ -199,15 +201,15 @@ const saveToGoogleSheets = async (data: FormData, aiMeta: { keywords: string[], 
  * FUNCIÓN PRINCIPAL EXPORTADA
  * Orquesta todo el proceso: IA -> Nube (vía Proxy) -> Word
  */
-export const handleExports = async (data: FormData, logoUrl: string): Promise<boolean> => {
+export const handleExports = async (data: FormData, logoUrl: string): Promise<{ success: boolean; error?: string }> => {
   // 1. Generar Metadatos con Inteligencia Artificial
   const meta = await generateMetadata(data);
 
   // 2. Guardar en la base de datos (Google Sheets) vía el proxy seguro
-  const saved = await saveToGoogleSheets(data, meta);
+  const result = await saveToGoogleSheets(data, meta);
 
   // 3. Generar y descargar comprobante en Word
   await createWordDocument(data);
 
-  return saved;
+  return result;
 };
