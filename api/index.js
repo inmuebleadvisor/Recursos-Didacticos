@@ -87,7 +87,27 @@ app.post('/api/save-resource', apiLimiter, async (req, res) => {
       return res.status(500).json({ error: "Error de configuración del servidor." });
     }
 
-    const response = await fetch(GOOGLE_SCRIPT_URL, {
+
+    // Helper para reintentos (Exponential Backoff simple)
+    const fetchWithRetry = async (url, options, retries = 3, backoff = 1000) => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const response = await fetch(url, options);
+          if (response.ok) return response; // Éxito
+
+          // Si es un error 5xx, reintentamos. Si es 4xx, probablemente es error nuestro, no reintentamos.
+          if (response.status < 500) throw new Error(`Error cliente: ${response.status}`);
+
+          throw new Error(`Error servidor: ${response.status}`);
+        } catch (err) {
+          if (i === retries - 1) throw err; // Si es el último intento, lanzamos el error
+          console.warn(`Intento ${i + 1} fallido. Reintentando en ${backoff}ms...`, err.message);
+          await new Promise(resolve => setTimeout(resolve, backoff));
+        }
+      }
+    };
+
+    const response = await fetchWithRetry(GOOGLE_SCRIPT_URL, {
       method: "POST",
       body: JSON.stringify(payload),
       headers: { "Content-Type": "text/plain;charset=utf-8" },
